@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>豆了个豆 - Bean Elimination Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .game-header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .game-header h1 {
+            font-size: 48px;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.3);
+            margin-bottom: 10px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .info-item {
+            text-align: center;
+            color: white;
+        }
+
+        .info-item .label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .info-item .value {
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .game-board {
+            background: rgba(255,255,255,0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+        }
+
+        .board-container {
+            position: relative;
+            width: 420px;
+            height: 420px;
+            margin: 0 auto 30px;
+            background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%);
+            border-radius: 15px;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .block {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            user-select: none;
+        }
+
+        .block.image-mode {
+            font-size: 0;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        .block:not(.disabled):hover {
+            transform: scale(1.1) translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+            z-index: 9999 !important;
+        }
+
+        .block.disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .block.clicked {
+            opacity: 0.3;
+        }
+
+        .slot-area {
+            background: linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%);
+            border-radius: 15px;
+            padding: 20px;
+            min-height: 100px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .slot-block {
+            width: 55px;
+            height: 55px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            background: white;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+            animation: slideIn 0.3s ease;
+        }
+
+        .slot-block.image-mode {
+            font-size: 0;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 500px;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-content h2 {
+            font-size: 36px;
+            margin-bottom: 20px;
+            color: #667eea;
+        }
+
+        .modal-content p {
+            font-size: 18px;
+            margin-bottom: 30px;
+            color: #666;
+        }
+
+        .config-panel {
+            background: rgba(255,255,255,0.95);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .config-panel h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+
+        .config-group {
+            margin-bottom: 15px;
+        }
+
+        .config-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .config-group input,
+        .config-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .config-group input:focus,
+        .config-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .image-config {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .image-config input {
+            width: 100%;
+        }
+
+        @media (max-width: 768px) {
+            .board-container {
+                width: 350px;
+                height: 350px;
+            }
+
+            .block {
+                width: 50px;
+                height: 50px;
+                font-size: 30px;
+            }
+
+            .slot-block {
+                width: 45px;
+                height: 45px;
+                font-size: 28px;
+            }
+
+            .game-header h1 {
+                font-size: 36px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="game-header">
+            <h1>🫘 豆了个豆 🫘</h1>
+            <p>消除所有豆子就胜利啦！</p>
+        </div>
+
+        <!-- 配置面板 -->
+        <div class="config-panel">
+            <h3>⚙️ 游戏配置</h3>
+            <div class="config-group">
+                <label>难度选择：</label>
+                <select id="difficulty">
+                    <option value="easy">简单（6种豆，4层）</option>
+                    <option value="medium" selected>中等（8种豆，5层）</option>
+                    <option value="hard">困难（10种豆，6层）</option>
+                </select>
+            </div>
+            <div class="config-group">
+                <label>素材模式：</label>
+                <select id="materialMode">
+                    <option value="emoji" selected>使用 Emoji</option>
+                    <option value="image">使用图床图片</option>
+                </select>
+            </div>
+            <div class="config-group" id="imageUrlConfig" style="display: none;">
+                <label>图片URL配置（每个豆子一个URL，用换行分隔）：</label>
+                <textarea id="imageUrls" rows="6" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 14px;" placeholder="输入图片URL，每行一个&#10;例如：&#10;https://example.com/bean1.png&#10;https://example.com/bean2.png"></textarea>
+            </div>
+        </div>
+
+        <div class="game-info">
+            <div class="info-item">
+                <div class="label">剩余方块</div>
+                <div class="value" id="remainingBlocks">0</div>
+            </div>
+            <div class="info-item">
+                <div class="label">槽位</div>
+                <div class="value" id="slotCount">0/7</div>
+            </div>
+            <div class="info-item">
+                <div class="label">已消除</div>
+                <div class="value" id="clearedBlocks">0</div>
+            </div>
+        </div>
+
+        <div class="game-board">
+            <div class="board-container" id="gameBoard"></div>
+            <div class="slot-area" id="slotArea">
+                <p style="color: white; opacity: 0.7;">点击上方豆子开始游戏</p>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-success" onclick="game.start()">🎮 开始游戏</button>
+            <button class="btn btn-warning" onclick="game.undo()">↶ 撤回</button>
+            <button class="btn btn-info" onclick="game.shuffle()">🔄 洗牌</button>
+            <button class="btn btn-primary" onclick="game.destroy()">💥 破坏</button>
+        </div>
+    </div>
+
+    <!-- 游戏结束模态框 -->
+    <div class="modal" id="gameOverModal">
+        <div class="modal-content">
+            <h2 id="modalTitle">🎉</h2>
+            <p id="modalMessage">恭喜通关！</p>
+            <button class="btn btn-success" onclick="game.closeModal()">确定</button>
+        </div>
+    </div>
+
+    <script>
+        // 游戏配置
+        const DIFFICULTIES = {
+            easy: {
+                typeNum: 6,
+                levelNum: 4,
+                blocksPerLevel: 8,
+                emojis: ['🫘', '🌰', '🥜', '🫛', '🌽', '🥔']
+            },
+            medium: {
+                typeNum: 8,
+                levelNum: 5,
+                blocksPerLevel: 10,
+                emojis: ['🫘', '🌰', '🥜', '🫛', '🌽', '🥔', '🍠', '🥕']
+            },
+            hard: {
+                typeNum: 10,
+                levelNum: 6,
+                blocksPerLevel: 12,
+                emojis: ['🫘', '🌰', '🥜', '🫛', '🌽', '🥔', '🍠', '🥕', '🧅', '🫑']
+            }
+        };
+
+        const SLOT_MAX = 7;
+        const COMPOSE_NUM = 3;
+        const BLOCK_SIZE = 60;
+        const BOARD_SIZE = 420;
+        const GRID_SIZE = 7; // 7x7 网格
+
+        // 豆子颜色配置
+        const BEAN_COLORS = [
+            '#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24',
+            '#6c5ce7', '#a29bfe', '#fd79a8', '#fdcb6e',
+            '#e17055', '#00b894'
+        ];
+
+        class BeanGame {
+            constructor() {
+                this.blocks = [];
+                this.slotBlocks = [];
+                this.clearedCount = 0;
+                this.history = [];
+                this.gameStatus = 'idle'; // idle, playing, won, lost
+                this.currentConfig = DIFFICULTIES.medium;
+                this.materialMode = 'emoji';
+                this.imageUrls = [];
+
+                this.initEvents();
+            }
+
+            initEvents() {
+                document.getElementById('difficulty').addEventListener('change', (e) => {
+                    this.currentConfig = DIFFICULTIES[e.target.value];
+                });
+
+                document.getElementById('materialMode').addEventListener('change', (e) => {
+                    this.materialMode = e.target.value;
+                    const imageConfig = document.getElementById('imageUrlConfig');
+                    imageConfig.style.display = e.target.value === 'image' ? 'block' : 'none';
+                });
+            }
+
+            start() {
+                this.blocks = [];
+                this.slotBlocks = [];
+                this.clearedCount = 0;
+                this.history = [];
+                this.gameStatus = 'playing';
+
+                // 解析图片URL
+                if (this.materialMode === 'image') {
+                    const urlText = document.getElementById('imageUrls').value.trim();
+                    this.imageUrls = urlText.split('\n').filter(url => url.trim());
+                    if (this.imageUrls.length < this.currentConfig.typeNum) {
+                        alert('图片URL数量不足！请至少提供 ' + this.currentConfig.typeNum + ' 个URL');
+                        return;
+                    }
+                }
+
+                this.generateBlocks();
+                this.render();
+                this.updateInfo();
+            }
+
+            generateBlocks() {
+                const { typeNum, levelNum, blocksPerLevel } = this.currentConfig;
+
+                // 计算总块数（确保是COMPOSE_NUM的倍数）
+                let totalBlocks = levelNum * blocksPerLevel;
+                totalBlocks = Math.ceil(totalBlocks / COMPOSE_NUM) * COMPOSE_NUM;
+
+                // 创建块类型数组
+                const types = [];
+                for (let i = 0; i < totalBlocks; i++) {
+                    types.push(i % typeNum);
+                }
+
+                // 洗牌
+                this.shuffleArray(types);
+
+                // 创建所有块
+                let blockId = 0;
+                const allBlocks = [];
+
+                for (let level = 0; level < levelNum; level++) {
+                    const blocksInLevel = Math.min(blocksPerLevel, totalBlocks - blockId);
+                    const positions = this.generateLevelPositions(level, blocksInLevel);
+
+                    for (let i = 0; i < positions.length && blockId < totalBlocks; i++) {
+                        const pos = positions[i];
+                        allBlocks.push({
+                            id: blockId,
+                            x: pos.x,
+                            y: pos.y,
+                            level: level,
+                            type: types[blockId],
+                            status: 0, // 0: 正常, 1: 已点击, 2: 已消除
+                            lowerThanBlocks: [],
+                            higherThanBlocks: []
+                        });
+                        blockId++;
+                    }
+                }
+
+                this.blocks = allBlocks;
+                this.buildRelations();
+            }
+
+            generateLevelPositions(level, count) {
+                const positions = [];
+                const gridSize = GRID_SIZE;
+                const centerOffset = Math.floor(level * 0.3); // 越高层越往中心收缩
+
+                const minPos = centerOffset;
+                const maxPos = gridSize - centerOffset - 1;
+
+                const attempts = count * 10; // 最多尝试次数
+                let generated = 0;
+
+                for (let i = 0; i < attempts && generated < count; i++) {
+                    const x = Math.floor(Math.random() * (maxPos - minPos + 1)) + minPos;
+                    const y = Math.floor(Math.random() * (maxPos - minPos + 1)) + minPos;
+
+                    // 检查是否与已有位置重叠
+                    const overlap = positions.some(pos =>
+                        Math.abs(pos.x - x) < 1 && Math.abs(pos.y - y) < 1
+                    );
+
+                    if (!overlap) {
+                        positions.push({ x, y });
+                        generated++;
+                    }
+                }
+
+                return positions;
+            }
+
+            buildRelations() {
+                // 为每个块建立覆盖关系
+                for (let i = 0; i < this.blocks.length; i++) {
+                    const block = this.blocks[i];
+                    block.lowerThanBlocks = [];
+                    block.higherThanBlocks = [];
+
+                    // 检查是否覆盖其他块
+                    for (let j = 0; j < this.blocks.length; j++) {
+                        if (i === j) continue;
+                        const other = this.blocks[j];
+
+                        // 如果this块层级更高，且在other块上方（位置有重叠）
+                        if (block.level > other.level) {
+                            const dx = Math.abs(block.x - other.x);
+                            const dy = Math.abs(block.y - other.y);
+
+                            // 判断是否有重叠（考虑块的大小）
+                            if (dx < 1.5 && dy < 1.5) {
+                                block.lowerThanBlocks.push(other.id);
+                                other.higherThanBlocks.push(block.id);
+                            }
+                        }
+                    }
+                }
+            }
+
+            clickBlock(blockId) {
+                if (this.gameStatus !== 'playing') return;
+
+                const block = this.blocks.find(b => b.id === blockId);
+                if (!block || block.status !== 0) return;
+
+                // 检查槽位是否已满
+                if (this.slotBlocks.length >= SLOT_MAX) {
+                    this.showModal('游戏失败', '槽位已满，无法继续！');
+                    this.gameStatus = 'lost';
+                    return;
+                }
+
+                // 检查是否被压住
+                const isBlocked = block.higherThanBlocks.some(id => {
+                    const higherBlock = this.blocks.find(b => b.id === id);
+                    return higherBlock && higherBlock.status === 0;
+                });
+
+                if (isBlocked) {
+                    return; // 被压住，不能点击
+                }
+
+                // 保存历史记录
+                this.saveHistory();
+
+                // 标记为已点击
+                block.status = 1;
+
+                // 添加到槽位
+                this.slotBlocks.push(block);
+
+                // 检查是否可以消除
+                this.checkElimination();
+
+                this.render();
+                this.updateInfo();
+
+                // 检查游戏状态
+                this.checkGameStatus();
+            }
+
+            checkElimination() {
+                // 统计每种类型的数量
+                const typeCount = {};
+                this.slotBlocks.forEach(block => {
+                    typeCount[block.type] = (typeCount[block.type] || 0) + 1;
+                });
+
+                // 找出可以消除的类型
+                const toEliminate = [];
+                for (const type in typeCount) {
+                    if (typeCount[type] >= COMPOSE_NUM) {
+                        toEliminate.push(parseInt(type));
+                    }
+                }
+
+                // 执行消除
+                toEliminate.forEach(type => {
+                    let count = 0;
+                    this.slotBlocks = this.slotBlocks.filter(block => {
+                        if (block.type === type && count < COMPOSE_NUM) {
+                            block.status = 2;
+                            this.clearedCount++;
+                            count++;
+                            return false;
+                        }
+                        return true;
+                    });
+                });
+            }
+
+            checkGameStatus() {
+                // 检查是否所有块都被消除
+                const remainingBlocks = this.blocks.filter(b => b.status === 0);
+                if (remainingBlocks.length === 0) {
+                    this.showModal('🎉 恭喜通关！', '你成功消除了所有豆子！');
+                    this.gameStatus = 'won';
+                    return;
+                }
+
+                // 检查槽位是否已满
+                if (this.slotBlocks.length >= SLOT_MAX) {
+                    this.showModal('😢 游戏失败', '槽位已满，游戏结束！');
+                    this.gameStatus = 'lost';
+                }
+            }
+
+            saveHistory() {
+                this.history.push({
+                    blocks: JSON.parse(JSON.stringify(this.blocks)),
+                    slotBlocks: JSON.parse(JSON.stringify(this.slotBlocks)),
+                    clearedCount: this.clearedCount
+                });
+            }
+
+            undo() {
+                if (this.history.length === 0 || this.gameStatus !== 'playing') return;
+
+                const last = this.history.pop();
+                this.blocks = last.blocks;
+                this.slotBlocks = last.slotBlocks;
+                this.clearedCount = last.clearedCount;
+
+                this.render();
+                this.updateInfo();
+            }
+
+            shuffle() {
+                if (this.gameStatus !== 'playing') return;
+
+                this.saveHistory();
+
+                // 收集所有未消除块的类型
+                const types = this.blocks
+                    .filter(b => b.status === 0)
+                    .map(b => b.type);
+
+                this.shuffleArray(types);
+
+                // 重新分配类型
+                let index = 0;
+                this.blocks.forEach(block => {
+                    if (block.status === 0) {
+                        block.type = types[index++];
+                    }
+                });
+
+                this.render();
+            }
+
+            destroy() {
+                if (this.gameStatus !== 'playing') return;
+
+                // 找出数量最多的类型
+                const typeCount = {};
+                this.blocks.forEach(block => {
+                    if (block.status === 0) {
+                        typeCount[block.type] = (typeCount[block.type] || 0) + 1;
+                    }
+                });
+
+                let maxType = -1;
+                let maxCount = 0;
+                for (const type in typeCount) {
+                    if (typeCount[type] > maxCount) {
+                        maxCount = typeCount[type];
+                        maxType = parseInt(type);
+                    }
+                }
+
+                if (maxType === -1) return;
+
+                this.saveHistory();
+
+                // 消除该类型的COMPOSE_NUM个块
+                let destroyed = 0;
+                this.blocks.forEach(block => {
+                    if (block.status === 0 && block.type === maxType && destroyed < COMPOSE_NUM) {
+                        block.status = 2;
+                        this.clearedCount++;
+                        destroyed++;
+                    }
+                });
+
+                this.render();
+                this.updateInfo();
+                this.checkGameStatus();
+            }
+
+            shuffleArray(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+            }
+
+            render() {
+                const board = document.getElementById('gameBoard');
+                const slotArea = document.getElementById('slotArea');
+
+                // 渲染游戏板
+                board.innerHTML = '';
+                this.blocks
+                    .filter(b => b.status === 0 || b.status === 1)
+                    .forEach(block => {
+                        const div = document.createElement('div');
+                        div.className = 'block';
+
+                        const gridUnit = BOARD_SIZE / GRID_SIZE;
+                        div.style.left = block.x * gridUnit + 'px';
+                        div.style.top = block.y * gridUnit + 'px';
+                        div.style.zIndex = block.level * 10;
+
+                        // 设置背景色和内容
+                        if (this.materialMode === 'emoji') {
+                            div.style.backgroundColor = BEAN_COLORS[block.type % BEAN_COLORS.length];
+                            div.textContent = this.currentConfig.emojis[block.type];
+                        } else {
+                            div.classList.add('image-mode');
+                            div.style.backgroundImage = `url(${this.imageUrls[block.type]})`;
+                        }
+
+                        if (block.status === 1) {
+                            div.classList.add('clicked');
+                        }
+
+                        // 检查是否被压住
+                        const isBlocked = block.higherThanBlocks.some(id => {
+                            const higherBlock = this.blocks.find(b => b.id === id);
+                            return higherBlock && higherBlock.status === 0;
+                        });
+
+                        if (isBlocked) {
+                            div.classList.add('disabled');
+                        }
+
+                        div.onclick = () => this.clickBlock(block.id);
+                        board.appendChild(div);
+                    });
+
+                // 渲染槽位
+                slotArea.innerHTML = '';
+                this.slotBlocks.forEach(block => {
+                    const div = document.createElement('div');
+                    div.className = 'slot-block';
+
+                    if (this.materialMode === 'emoji') {
+                        div.style.backgroundColor = BEAN_COLORS[block.type % BEAN_COLORS.length];
+                        div.textContent = this.currentConfig.emojis[block.type];
+                    } else {
+                        div.classList.add('image-mode');
+                        div.style.backgroundImage = `url(${this.imageUrls[block.type]})`;
+                    }
+
+                    slotArea.appendChild(div);
+                });
+
+                // 填充空槽位提示
+                for (let i = this.slotBlocks.length; i < SLOT_MAX; i++) {
+                    const div = document.createElement('div');
+                    div.className = 'slot-block';
+                    div.style.backgroundColor = 'rgba(255,255,255,0.3)';
+                    div.style.border = '2px dashed rgba(255,255,255,0.5)';
+                    slotArea.appendChild(div);
+                }
+            }
+
+            updateInfo() {
+                const remaining = this.blocks.filter(b => b.status === 0).length;
+                document.getElementById('remainingBlocks').textContent = remaining;
+                document.getElementById('slotCount').textContent = `${this.slotBlocks.length}/${SLOT_MAX}`;
+                document.getElementById('clearedBlocks').textContent = this.clearedCount;
+            }
+
+            showModal(title, message) {
+                document.getElementById('modalTitle').textContent = title;
+                document.getElementById('modalMessage').textContent = message;
+                document.getElementById('gameOverModal').classList.add('show');
+            }
+
+            closeModal() {
+                document.getElementById('gameOverModal').classList.remove('show');
+            }
+        }
+
+        // 初始化游戏
+        const game = new BeanGame();
+    </script>
+</body>
+</html>
