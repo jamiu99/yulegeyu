@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>羊了个羊 - Emoji版</title>
+  <!-- Tailwind CSS v3 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome -->
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <!-- 统一的 Tailwind 配置 -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#4ade80',
+            secondary: '#86efac',
+            accent: '#facc15',
+            danger: '#ef4444',
+            dark: '#1e293b',
+            light: '#f8fafc'
+          },
+          fontFamily: {
+            sans: ['Arial', 'sans-serif'],
+          },
+          animation: {
+            'bounce-slow': 'bounce 2s infinite',
+            'pulse-slow': 'pulse 3s infinite',
+            'shake': 'shake 0.5s cubic-bezier(.36,.07,.19,.97) both',
+            'pop': 'pop 0.3s ease-out',
+            'disappear': 'disappear 0.5s ease-out forwards',
+          },
+          keyframes: {
+            shake: {
+              '10%, 90%': { transform: 'translate3d(-1px, 0, 0)' },
+              '20%, 80%': { transform: 'translate3d(2px, 0, 0)' },
+              '30%, 50%, 70%': { transform: 'translate3d(-4px, 0, 0)' },
+              '40%, 60%': { transform: 'translate3d(4px, 0, 0)' }
+            },
+            pop: {
+              '0%': { transform: 'scale(1)' },
+              '50%': { transform: 'scale(1.2)' },
+              '100%': { transform: 'scale(1)' }
+            },
+            disappear: {
+              '0%': { opacity: '1', transform: 'scale(1)' },
+              '50%': { opacity: '0.5', transform: 'scale(1.2)' },
+              '100%': { opacity: '0', transform: 'scale(0)' }
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .card {
+        @apply w-16 h-16 md:w-20 md:h-20 flex items-center justify-center text-2xl md:text-3xl rounded-lg shadow-md cursor-pointer transition-all duration-200 hover:scale-110;
+      }
+      .card-selected {
+        @apply ring-4 ring-accent ring-opacity-70;
+      }
+      .card-in-slot {
+        @apply w-12 h-12 md:w-16 md:h-16 text-xl md:text-2xl;
+      }
+      .card-stack {
+        @apply absolute transition-all duration-300 ease-in-out;
+      }
+      .card-removed {
+        @apply animate-disappear;
+      }
+      .slot {
+        @apply w-12 h-12 md:w-16 md:h-16 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center;
+      }
+      .slot-filled {
+        @apply border-primary bg-green-50;
+      }
+      .btn-primary {
+        @apply bg-primary hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg;
+      }
+      .btn-secondary {
+        @apply bg-secondary hover:bg-green-500 text-white font-bold py-2 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg;
+      }
+      .btn-danger {
+        @apply bg-danger hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg;
+      }
+      .btn-accent {
+        @apply bg-accent hover:bg-yellow-500 text-white font-bold py-2 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg;
+      }
+      .glass-effect {
+        @apply bg-white bg-opacity-20 backdrop-blur-lg rounded-xl border border-white border-opacity-30 shadow-lg;
+      }
+      .text-shadow {
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      }
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-b from-green-100 to-green-200 min-h-screen font-sans">
+  <!-- 游戏容器 -->
+  <div id="game-container" class="container mx-auto px-4 py-6 max-w-6xl">
+
+    <!-- 游戏标题 -->
+    <header class="text-center mb-6">
+      <h1 class="text-4xl md:text-6xl font-bold text-green-800 mb-2 text-shadow">羊了个羊</h1>
+      <p class="text-lg md:text-xl text-green-700">Emoji 版消除挑战</p>
+    </header>
+
+    <!-- 游戏信息栏 -->
+    <div class="flex justify-between items-center mb-6 glass-effect p-4">
+      <div class="flex items-center">
+        <span class="text-xl font-bold text-green-800 mr-2">关卡:</span>
+        <span id="level" class="text-2xl font-bold text-accent">1</span>
+      </div>
+      <div class="flex items-center">
+        <span class="text-xl font-bold text-green-800 mr-2">分数:</span>
+        <span id="score" class="text-2xl font-bold text-accent">0</span>
+      </div>
+      <div class="flex items-center">
+        <span class="text-xl font-bold text-green-800 mr-2">剩余卡牌:</span>
+        <span id="remaining-cards" class="text-2xl font-bold text-accent">0</span>
+      </div>
+      <button id="restart-btn" class="btn-danger flex items-center">
+        <i class="fa fa-refresh mr-2"></i> 重新开始
+      </button>
+    </div>
+
+    <!-- 游戏主区域 -->
+    <div class="relative">
+      <!-- 卡牌区域 -->
+      <div id="card-area" class="relative bg-green-50 rounded-2xl shadow-xl overflow-hidden h-[400px] md:h-[500px] mb-6">
+        <!-- 卡牌将通过 JavaScript 动态生成 -->
+        <div id="card-stack" class="absolute inset-0">
+          <!-- 卡牌堆叠区域 -->
+        </div>
+
+        <!-- 游戏结束遮罩 -->
+        <div id="game-over" class="absolute inset-0 bg-black bg-opacity-70 flex flex-col items-center justify-center hidden z-50">
+          <h2 class="text-4xl font-bold text-white mb-6 text-shadow">游戏结束</h2>
+          <p id="game-over-message" class="text-2xl text-white mb-8 text-center px-4"></p>
+          <div class="flex flex-col md:flex-row gap-4">
+            <button id="try-again-btn" class="btn-primary text-lg">再试一次</button>
+            <button id="share-btn" class="btn-accent text-lg">分享成绩</button>
+          </div>
+        </div>
+
+        <!-- 关卡完成遮罩 -->
+        <div id="level-cleared" class="absolute inset-0 bg-black bg-opacity-70 flex flex-col items-center justify-center hidden z-50">
+          <h2 class="text-4xl font-bold text-white mb-6 text-shadow">关卡完成!</h2>
+          <p id="level-cleared-message" class="text-2xl text-white mb-8 text-center px-4"></p>
+          <div class="flex flex-col md:flex-row gap-4">
+            <button id="next-level-btn" class="btn-primary text-lg">下一关</button>
+            <button id="share-level-btn" class="btn-accent text-lg">分享成绩</button>
+          </div>
+        </div>
+
+        <!-- 开始游戏遮罩 -->
+        <div id="start-game" class="absolute inset-0 bg-black bg-opacity-70 flex flex-col items-center justify-center z-50">
+          <h2 class="text-4xl font-bold text-white mb-6 text-shadow">羊了个羊</h2>
+          <p class="text-xl text-white mb-8 text-center px-4">点击相同的emoji卡牌进行消除，凑齐三张即可消除</p>
+          <p class="text-xl text-white mb-8 text-center px-4">卡槽最多只能放7张卡牌，填满则游戏失败</p>
+          <button id="start-btn" class="btn-primary text-lg animate-bounce-slow">开始游戏</button>
+        </div>
+      </div>
+
+      <!-- 卡槽区域 -->
+      <div class="glass-effect p-4 rounded-2xl">
+        <h3 class="text-xl font-bold text-green-800 mb-4 text-center">卡槽 (最多7张)</h3>
+        <div id="slot-area" class="flex justify-center gap-2 md:gap-4 flex-wrap">
+          <!-- 卡槽将通过 JavaScript 动态生成 -->
+        </div>
+      </div>
+
+      <!-- 道具区域 -->
+      <div class="mt-6 glass-effect p-4 rounded-2xl">
+        <h3 class="text-xl font-bold text-green-800 mb-4 text-center">道具</h3>
+        <div class="flex justify-center gap-4 flex-wrap">
+          <button id="remove-btn" class="btn-secondary flex items-center disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+            <i class="fa fa-trash mr-2"></i> 移除前3张
+            <span class="ml-2 bg-white text-green-800 rounded-full w-6 h-6 flex items-center justify-center text-sm">1</span>
+          </button>
+          <button id="undo-btn" class="btn-secondary flex items-center disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+            <i class="fa fa-undo mr-2"></i> 撤销上一步
+            <span class="ml-2 bg-white text-green-800 rounded-full w-6 h-6 flex items-center justify-center text-sm">1</span>
+          </button>
+          <button id="shuffle-btn" class="btn-secondary flex items-center disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+            <i class="fa fa-refresh mr-2"></i> 洗牌
+            <span class="ml-2 bg-white text-green-800 rounded-full w-6 h-6 flex items-center justify-center text-sm">1</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 排行榜区域 -->
+    <div class="mt-6 glass-effect p-4 rounded-2xl">
+      <h3 class="text-xl font-bold text-green-800 mb-4 text-center">排行榜</h3>
+      <div class="overflow-x-auto">
+        <table class="min-w-full bg-white rounded-lg overflow-hidden">
+          <thead class="bg-green-100">
+            <tr>
+              <th class="py-2 px-4 text-left">排名</th>
+              <th class="py-2 px-4 text-left">玩家</th>
+              <th class="py-2 px-4 text-left">关卡</th>
+              <th class="py-2 px-4 text-left">分数</th>
+              <th class="py-2 px-4 text-left">时间</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboard-body">
+            <!-- 排行榜数据将通过 JavaScript 动态生成 -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="mt-8 text-center text-green-700">
+      <p>羊了个羊 Emoji 版 &copy; 2025</p>
+    </footer>
+  </div>
+
+  <script>
+    // 游戏配置
+    const GAME_CONFIG = {
+      MAX_SLOTS: 7,
+      CARDS_PER_TYPE: 3,
+      INITIAL_CARD_TYPES: 6,
+      CARDS_PER_LEVEL_INCREMENT: 2,
+      MAX_CARD_TYPES: 12,
+      BASE_SCORE: 10,
+      LEVEL_SCORE_MULTIPLIER: 1.5,
+      PROP_COUNT: 1,
+      // 多层堆叠配置
+      LEVEL_NUM: 3, // 基础层数
+      BLOCKS_PER_LEVEL: 7, // 每层基础方块数量
+      GRID_SIZE: 8 // 网格大小
+    };
+
+    // 游戏状态
+    const GAME_STATE = {
+      level: 1,
+      score: 0,
+      remainingCards: 0,
+      isGameOver: false,
+      isLevelCleared: false,
+      isGameStarted: false,
+      selectedCards: [],
+      cardSlots: Array(GAME_CONFIG.MAX_SLOTS).fill(null),
+      cardStack: [],
+      availableCardTypes: [],
+      usedProps: {
+        remove: 0,
+        undo: 0,
+        shuffle: 0
+      },
+      gameStartTime: null,
+      gameTime: 0,
+      moveHistory: [],
+      timerInterval: null
+    };
+
+    // Emoji 卡牌类型
+    const EMOJI_TYPES = [
+      '🐑', '🐄', '🐔', '🐶', '🐱', '🐰',
+      '🍎', '🍐', '🍊', '🍋', '🍌', '🍇',
+      '🌽', '🍚', '🍞', '🥖', '🥞', '🍳',
+      '🌲', '🌳', '🌴', '🌿', '🍀', '🌹'
+    ];
+
+    // 卡牌背景颜色
+    const CARD_COLORS = [
+      '#fecaca', '#fed7aa', '#fde68a', '#d9f99d', '#a7f3d0', '#a5f3fc',
+      '#bfdbfe', '#ddd6fe', '#f5d0fe', '#fecdd3', '#fbcfe8', '#e9d5ff'
+    ];
+
+    // DOM 元素
+    const DOM_ELEMENTS = {
+      cardStack: document.getElementById('card-stack'),
+      slotArea: document.getElementById('slot-area'),
+      level: document.getElementById('level'),
+      score: document.getElementById('score'),
+      remainingCards: document.getElementById('remaining-cards'),
+      restartBtn: document.getElementById('restart-btn'),
+      startBtn: document.getElementById('start-btn'),
+      startGame: document.getElementById('start-game'),
+      gameOver: document.getElementById('game-over'),
+      gameOverMessage: document.getElementById('game-over-message'),
+      tryAgainBtn: document.getElementById('try-again-btn'),
+      shareBtn: document.getElementById('share-btn'),
+      levelCleared: document.getElementById('level-cleared'),
+      levelClearedMessage: document.getElementById('level-cleared-message'),
+      nextLevelBtn: document.getElementById('next-level-btn'),
+      shareLevelBtn: document.getElementById('share-level-btn'),
+      removeBtn: document.getElementById('remove-btn'),
+      undoBtn: document.getElementById('undo-btn'),
+      shuffleBtn: document.getElementById('shuffle-btn'),
+      leaderboardBody: document.getElementById('leaderboard-body')
+    };
+
+    // 初始化游戏
+    function initGame() {
+      // 初始化卡槽
+      initSlots();
+
+      // 初始化事件监听
+      initEventListeners();
+
+      // 初始化排行榜
+      updateLeaderboard();
+    }
+
+    // 初始化卡槽
+    function initSlots() {
+      DOM_ELEMENTS.slotArea.innerHTML = '';
+
+      for (let i = 0; i < GAME_CONFIG.MAX_SLOTS; i++) {
+        const slot = document.createElement('div');
+        slot.className = 'slot';
+        slot.dataset.index = i;
+        DOM_ELEMENTS.slotArea.appendChild(slot);
+      }
+    }
+
+    // 初始化事件监听
+    function initEventListeners() {
+      // 重新开始按钮
+      DOM_ELEMENTS.restartBtn.addEventListener('click', restartGame);
+
+      // 开始游戏按钮
+      DOM_ELEMENTS.startBtn.addEventListener('click', startGame);
+
+      // 再试一次按钮
+      DOM_ELEMENTS.tryAgainBtn.addEventListener('click', restartGame);
+
+      // 分享按钮
+      DOM_ELEMENTS.shareBtn.addEventListener('click', shareScore);
+
+      // 下一关按钮
+      DOM_ELEMENTS.nextLevelBtn.addEventListener('click', nextLevel);
+
+      // 分享关卡按钮
+      DOM_ELEMENTS.shareLevelBtn.addEventListener('click', shareScore);
+
+      // 道具按钮
+      DOM_ELEMENTS.removeBtn.addEventListener('click', useRemoveProp);
+      DOM_ELEMENTS.undoBtn.addEventListener('click', useUndoProp);
+      DOM_ELEMENTS.shuffleBtn.addEventListener('click', useShuffleProp);
+    }
+
+    // 开始游戏
+    function startGame() {
+      // 重置游戏状态
+      GAME_STATE.level = 1;
+      GAME_STATE.score = 0;
+      GAME_STATE.isGameOver = false;
+      GAME_STATE.isLevelCleared = false;
+      GAME_STATE.isGameStarted = true;
+      GAME_STATE.selectedCards = [];
+      GAME_STATE.cardSlots = Array(GAME_CONFIG.MAX_SLOTS).fill(null);
+      GAME_STATE.cardStack = [];
+      GAME_STATE.usedProps = {
+        remove: 0,
+        undo: 0,
+        shuffle: 0
+      };
+      GAME_STATE.gameStartTime = new Date();
+      GAME_STATE.gameTime = 0;
+      GAME_STATE.moveHistory = [];
+
+      // 启用道具按钮
+      DOM_ELEMENTS.removeBtn.disabled = false;
+      DOM_ELEMENTS.undoBtn.disabled = false;
+      DOM_ELEMENTS.shuffleBtn.disabled = false;
+
+      // 更新UI
+      updateUI();
+
+      // 隐藏开始游戏遮罩
+      DOM_ELEMENTS.startGame.classList.add('hidden');
+
+      // 生成第一关
+      generateLevel(GAME_STATE.level);
+
+      // 开始计时
+      startGameTimer();
+    }
+
+    // 重新开始游戏
+    function restartGame() {
+      // 重置游戏状态
+      GAME_STATE.level = 1;
+      GAME_STATE.score = 0;
+      GAME_STATE.isGameOver = false;
+      GAME_STATE.isLevelCleared = false;
+      GAME_STATE.selectedCards = [];
+      GAME_STATE.cardSlots = Array(GAME_CONFIG.MAX_SLOTS).fill(null);
+      GAME_STATE.cardStack = [];
+      GAME_STATE.usedProps = {
+        remove: 0,
+        undo: 0,
+        shuffle: 0
+      };
+      GAME_STATE.gameStartTime = new Date();
+      GAME_STATE.gameTime = 0;
+      GAME_STATE.moveHistory = [];
+
+      // 启用道具按钮
+      DOM_ELEMENTS.removeBtn.disabled = false;
+      DOM_ELEMENTS.undoBtn.disabled = false;
+      DOM_ELEMENTS.shuffleBtn.disabled = false;
+
+      // 更新UI
+      updateUI();
+
+      // 隐藏游戏结束和关卡完成遮罩
+      DOM_ELEMENTS.gameOver.classList.add('hidden');
+      DOM_ELEMENTS.levelCleared.classList.add('hidden');
+
+      // 生成第一关
+      generateLevel(GAME_STATE.level);
+
+      // 开始计时
+      startGameTimer();
+    }
+
+    // 下一关
+    function nextLevel() {
+      // 增加关卡
+      GAME_STATE.level++;
+
+      // 重置游戏状态
+      GAME_STATE.isGameOver = false;
+      GAME_STATE.isLevelCleared = false;
+      GAME_STATE.selectedCards = [];
+      GAME_STATE.cardSlots = Array(GAME_CONFIG.MAX_SLOTS).fill(null);
+      GAME_STATE.cardStack = [];
+      GAME_STATE.moveHistory = [];
+      GAME_STATE.usedProps = {
+        remove: 0,
+        undo: 0,
+        shuffle: 0
+      };
+
+      // 启用道具按钮
+      DOM_ELEMENTS.removeBtn.disabled = false;
+      DOM_ELEMENTS.undoBtn.disabled = false;
+      DOM_ELEMENTS.shuffleBtn.disabled = false;
+
+      // 更新UI
+      updateUI();
+
+      // 隐藏关卡完成遮罩
+      DOM_ELEMENTS.levelCleared.classList.add('hidden');
+
+      // 生成下一关
+      generateLevel(GAME_STATE.level);
+    }
+
+    // 生成关卡
+    function generateLevel(level) {
+      // 计算当前关卡的卡牌类型数量
+      const cardTypeCount = Math.min(
+        GAME_CONFIG.INITIAL_CARD_TYPES + (level - 1) * GAME_CONFIG.CARDS_PER_LEVEL_INCREMENT,
+        GAME_CONFIG.MAX_CARD_TYPES
+      );
+
+      // 随机选择卡牌类型
+      GAME_STATE.availableCardTypes = getRandomEmojis(cardTypeCount);
+
+      // 生成卡牌堆
+      generateCardStack(GAME_STATE.availableCardTypes);
+
+      // 更新剩余卡牌数量
+      GAME_STATE.remainingCards = GAME_STATE.cardStack.length;
+
+      // 更新UI
+      updateUI();
+    }
+
+    // 随机选择emoji
+    function getRandomEmojis(count) {
+      // 复制emoji数组
+      const emojis = [...EMOJI_TYPES];
+
+      // 随机排序
+      shuffleArray(emojis);
+
+      // 取前count个
+      return emojis.slice(0, count);
+    }
+
+    // 生成卡牌堆
+    function generateCardStack(emojiTypes) {
+      // 清空卡牌堆
+      GAME_STATE.cardStack = [];
+
+      const { levelNum, blocksPerLevel, typeNum } = getLevelConfig();
+
+      // 计算总块数（确保是3的倍数）
+      let totalBlocks = levelNum * blocksPerLevel;
+      totalBlocks = Math.ceil(totalBlocks / 3) * 3;
+
+      // 创建块类型数组
+      const types = [];
+      for (let i = 0; i < totalBlocks; i++) {
+        types.push(i % emojiTypes.length);
+      }
+
+      // 洗牌
+      shuffleArray(types);
+
+      // 创建所有块
+      let blockId = 0;
+
+      for (let level = 0; level < levelNum; level++) {
+        const blocksInLevel = Math.min(blocksPerLevel, totalBlocks - blockId);
+        const positions = generateLevelPositions(level, blocksInLevel);
+
+        for (let i = 0; i < positions.length && blockId < totalBlocks; i++) {
+          const pos = positions[i];
+          GAME_STATE.cardStack.push({
+            id: blockId.toString(),
+            type: emojiTypes[types[blockId]],
+            typeIndex: types[blockId],
+            level: level,
+            status: 0, // 0: 正常, 1: 已点击, 2: 已消除
+            isRemoved: false,
+            // 保存原始网格位置
+            gridPosition: { x: pos.x, y: pos.y, z: level },
+            // 像素位置将在渲染时计算
+            pixelPosition: null,
+            lowerThanBlocks: [],
+            higherThanBlocks: []
+          });
+          blockId++;
+        }
+      }
+
+      // 建立覆盖关系
+      buildRelations();
+
+      // 更新剩余卡牌数量
+      GAME_STATE.remainingCards = GAME_STATE.cardStack.filter(c => c.status === 0).length;
+
+      // 渲染卡牌
+      renderCards();
+    }
+
+    // 获取当前关卡配置
+    function getLevelConfig() {
+      const levelNum = GAME_CONFIG.LEVEL_NUM + Math.floor((GAME_STATE.level - 1) * 0.5);
+      const blocksPerLevel = GAME_CONFIG.BLOCKS_PER_LEVEL + (GAME_STATE.level - 1);
+      const typeNum = Math.min(
+        GAME_CONFIG.INITIAL_CARD_TYPES + (GAME_STATE.level - 1) * GAME_CONFIG.CARDS_PER_LEVEL_INCREMENT,
+        GAME_CONFIG.MAX_CARD_TYPES
+      );
+
+      return { levelNum, blocksPerLevel, typeNum };
+    }
+
+    // 生成层级位置
+    function generateLevelPositions(level, count) {
+      const positions = [];
+      const gridSize = GAME_CONFIG.GRID_SIZE;
+      const centerOffset = Math.floor(level * 0.3); // 越高层越往中心收缩
+
+      const minPos = centerOffset;
+      const maxPos = gridSize - centerOffset - 1;
+
+      const attempts = count * 10; // 最多尝试次数
+      let generated = 0;
+
+      for (let i = 0; i < attempts && generated < count; i++) {
+        const x = Math.floor(Math.random() * (maxPos - minPos + 1)) + minPos;
+        const y = Math.floor(Math.random() * (maxPos - minPos + 1)) + minPos;
+
+        // 检查是否与已有位置重叠
+        const overlap = positions.some(pos =>
+          Math.abs(pos.x - x) < 1 && Math.abs(pos.y - y) < 1
+        );
+
+        if (!overlap) {
+          positions.push({ x, y });
+          generated++;
+        }
+      }
+
+      // 如果无法生成足够的位置，放宽条件
+      if (generated < count) {
+        for (let i = generated; i < count; i++) {
+          positions.push({
+            x: Math.floor(Math.random() * gridSize),
+            y: Math.floor(Math.random() * gridSize)
+          });
+        }
+      }
+
+      return positions;
+    }
+
+    // 建立覆盖关系
+    function buildRelations() {
+      // 为每个块建立覆盖关系
+      for (let i = 0; i < GAME_STATE.cardStack.length; i++) {
+        const block = GAME_STATE.cardStack[i];
+        block.lowerThanBlocks = [];
+        block.higherThanBlocks = [];
+
+        // 检查是否覆盖其他块
+        for (let j = 0; j < GAME_STATE.cardStack.length; j++) {
+          if (i === j) continue;
+          const other = GAME_STATE.cardStack[j];
+
+          // 如果this块层级更高，且在other块上方（位置有重叠）
+          if (block.level > other.level) {
+            const dx = Math.abs(block.gridPosition.x - other.gridPosition.x);
+            const dy = Math.abs(block.gridPosition.y - other.gridPosition.y);
+
+            // 判断是否有重叠（考虑块的大小）
+            if (dx < 1.5 && dy < 1.5) {
+              block.lowerThanBlocks.push(other.id);
+              other.higherThanBlocks.push(block.id);
+            }
+          }
+        }
+      }
+    }
+
+    // 计算卡牌像素位置
+    function calculateCardPositions() {
+      const cardArea = DOM_ELEMENTS.cardStack.getBoundingClientRect();
+
+      // 如果区域还没有大小，延迟执行
+      if (cardArea.width === 0 || cardArea.height === 0) {
+        setTimeout(() => calculateCardPositions(), 100);
+        return;
+      }
+
+      // 检测是否是移动设备
+      const isMobile = window.innerWidth < 768;
+      const cardSize = isMobile ? 64 : 80; // 对应 w-16(64px) 和 md:w-20(80px)
+
+      const gridSize = GAME_CONFIG.GRID_SIZE;
+
+      // 计算网格单元大小（留出卡牌大小的空间）
+      const availableWidth = cardArea.width - cardSize;
+      const availableHeight = cardArea.height - cardSize;
+      const gridUnit = Math.min(
+        availableWidth / (gridSize - 1),
+        availableHeight / (gridSize - 1)
+      );
+
+      // 计算起始位置（居中）
+      const startX = (cardArea.width - ((gridSize - 1) * gridUnit + cardSize)) / 2;
+      const startY = (cardArea.height - ((gridSize - 1) * gridUnit + cardSize)) / 2;
+
+      // 为每张卡牌计算像素位置
+      GAME_STATE.cardStack.forEach(card => {
+        if (card.gridPosition) {
+          card.pixelPosition = {
+            x: startX + card.gridPosition.x * gridUnit,
+            y: startY + card.gridPosition.y * gridUnit,
+            z: card.level
+          };
+        }
+      });
+    }
+
+    // 渲染卡牌
+    function renderCards() {
+      // 清空卡牌区域
+      DOM_ELEMENTS.cardStack.innerHTML = '';
+
+      // 计算卡牌像素位置
+      calculateCardPositions();
+
+      // 等待位置计算完成
+      if (!GAME_STATE.cardStack[0]?.pixelPosition) {
+        setTimeout(() => renderCards(), 100);
+        return;
+      }
+
+      // 渲染每张卡牌
+      GAME_STATE.cardStack.forEach(card => {
+        if (!card.isRemoved && card.status !== 2 && card.pixelPosition) {
+          const cardElement = document.createElement('div');
+          cardElement.className = 'card card-stack';
+
+          // 设置背景颜色
+          const colorIndex = card.typeIndex % CARD_COLORS.length;
+          cardElement.style.backgroundColor = CARD_COLORS[colorIndex];
+
+          // 根据状态添加类
+          if (card.status === 1) {
+            cardElement.classList.add('opacity-50');
+          }
+
+          // 检查是否被压住
+          const isBlocked = isCardBlocked(card);
+          if (isBlocked) {
+            cardElement.classList.add('opacity-70');
+            cardElement.style.cursor = 'not-allowed';
+          } else {
+            cardElement.classList.add('cursor-pointer', 'hover:scale-110');
+          }
+
+          cardElement.dataset.id = card.id;
+          cardElement.dataset.type = card.type;
+          cardElement.style.left = `${card.pixelPosition.x}px`;
+          cardElement.style.top = `${card.pixelPosition.y}px`;
+          cardElement.style.zIndex = card.pixelPosition.z * 10;
+          cardElement.innerHTML = card.type;
+
+          // 添加点击事件
+          if (!isBlocked && card.status === 0) {
+            cardElement.addEventListener('click', () => selectCard(card));
+          }
+
+          DOM_ELEMENTS.cardStack.appendChild(cardElement);
+        }
+      });
+    }
+
+    // 检查卡牌是否被压住
+    function isCardBlocked(card) {
+      // 检查是否有更高层级的卡牌覆盖当前卡牌
+      return card.higherThanBlocks.some(id => {
+        const higherCard = GAME_STATE.cardStack.find(c => c.id === id);
+        return higherCard && higherCard.status === 0 && !higherCard.isRemoved;
+      });
+    }
+
+    // 选择卡牌
+    function selectCard(card) {
+      // 如果游戏结束或关卡完成，不执行操作
+      if (GAME_STATE.isGameOver || GAME_STATE.isLevelCleared) return;
+
+      // 检查是否被压住
+      if (isCardBlocked(card)) {
+        showToast('该卡牌被其他卡牌压住，无法点击');
+        return; // 被压住，不能点击
+      }
+
+      // 检查是否有可用的卡槽
+      const emptySlotIndex = GAME_STATE.cardSlots.findIndex(slot => slot === null);
+      if (emptySlotIndex === -1) {
+        // 卡槽已满，游戏失败
+        GAME_STATE.isGameOver = true;
+        stopGameTimer();
+        DOM_ELEMENTS.gameOver.classList.remove('hidden');
+        DOM_ELEMENTS.gameOverMessage.textContent = `游戏结束！卡槽已满，你通过了${GAME_STATE.level - 1}关，得分：${GAME_STATE.score}`;
+        saveLeaderboardData();
+        return;
+      }
+
+      // 保存历史记录
+      saveHistory();
+
+      // 标记为已点击
+      card.status = 1;
+
+      // 将卡牌放入卡槽
+      GAME_STATE.cardSlots[emptySlotIndex] = card;
+
+      // 更新UI
+      updateUI();
+
+      // 检查是否有三张相同的卡牌
+      setTimeout(() => {
+        checkForMatches();
+      }, 100);
+    }
+
+    // 保存历史记录
+    function saveHistory() {
+      GAME_STATE.moveHistory.push({
+        blocks: JSON.parse(JSON.stringify(GAME_STATE.cardStack.map(c => ({
+          ...c,
+          pixelPosition: null // 不保存像素位置，重新计算
+        })))),
+        cardSlots: JSON.parse(JSON.stringify(GAME_STATE.cardSlots)),
+        remainingCards: GAME_STATE.remainingCards,
+        score: GAME_STATE.score
+      });
+    }
+
+    // 检查是否有三张相同的卡牌
+    function checkForMatches() {
+      // 统计每种卡牌的数量
+      const cardCounts = {};
+      GAME_STATE.cardSlots.forEach((card, index) => {
+        if (card) {
+          if (!cardCounts[card.type]) {
+            cardCounts[card.type] = [];
+          }
+          cardCounts[card.type].push({ card, index });
+        }
+      });
+
+      // 检查是否有三张相同的卡牌
+      for (const [type, items] of Object.entries(cardCounts)) {
+        if (items.length >= 3) {
+          // 消除前三张卡牌
+          const itemsToRemove = items.slice(0, 3);
+
+          // 移除卡牌
+          removeCards(itemsToRemove.map(item => item.card));
+
+          // 从卡槽中移除
+          itemsToRemove.forEach(item => {
+            GAME_STATE.cardSlots[item.index] = null;
+          });
+
+          // 增加分数
+          addScore();
+
+          // 更新UI
+          updateUI();
+
+          // 检查关卡是否完成
+          setTimeout(() => {
+            checkGameStatus();
+          }, 600);
+
+          return;
+        }
+      }
+
+      // 没有消除，检查游戏状态
+      checkGameStatus();
+    }
+
+    // 移除卡牌
+    function removeCards(cards) {
+      // 动画效果
+      cards.forEach(card => {
+        const cardElement = document.querySelector(`.card[data-id="${card.id}"]`);
+        if (cardElement) {
+          cardElement.classList.add('card-removed');
+
+          // 标记卡牌为已移除
+          setTimeout(() => {
+            card.status = 2;
+            card.isRemoved = true;
+            GAME_STATE.remainingCards = GAME_STATE.cardStack.filter(c => c.status === 0).length;
+            renderCards();
+            updateUI();
+          }, 500);
+        }
+      });
+    }
+
+    // 增加分数
+    function addScore() {
+      const levelMultiplier = Math.pow(GAME_CONFIG.LEVEL_SCORE_MULTIPLIER, GAME_STATE.level - 1);
+      const scoreToAdd = Math.floor(GAME_CONFIG.BASE_SCORE * levelMultiplier);
+      GAME_STATE.score += scoreToAdd;
+
+      // 显示加分动画
+      showScoreAnimation(scoreToAdd);
+    }
+
+    // 显示加分动画
+    function showScoreAnimation(score) {
+      const scoreElement = DOM_ELEMENTS.score;
+
+      // 添加动画类
+      scoreElement.classList.add('text-accent', 'animate-pulse');
+
+      // 更新分数
+      setTimeout(() => {
+        scoreElement.textContent = GAME_STATE.score;
+      }, 100);
+
+      // 恢复原样
+      setTimeout(() => {
+        scoreElement.classList.remove('text-accent', 'animate-pulse');
+      }, 1000);
+    }
+
+    // 检查游戏状态
+    function checkGameStatus() {
+      // 检查是否所有卡牌都被消除
+      const remainingCards = GAME_STATE.cardStack.filter(card => card.status === 0 && !card.isRemoved);
+      if (remainingCards.length === 0) {
+        GAME_STATE.isLevelCleared = true;
+
+        // 停止计时
+        stopGameTimer();
+
+        // 显示关卡完成遮罩
+        DOM_ELEMENTS.levelCleared.classList.remove('hidden');
+        DOM_ELEMENTS.levelClearedMessage.textContent = `恭喜你通过第${GAME_STATE.level}关！得分：${GAME_STATE.score}，用时：${formatTime(GAME_STATE.gameTime)}`;
+
+        // 保存排行榜数据
+        saveLeaderboardData();
+        return;
+      }
+
+      // 检查是否还有可点击的卡牌
+      const clickableCards = GAME_STATE.cardStack.filter(card =>
+        card.status === 0 && !card.isRemoved && !isCardBlocked(card)
+      );
+
+      // 检查卡槽是否已满
+      const hasEmptySlot = GAME_STATE.cardSlots.some(slot => slot === null);
+
+      // 如果卡槽已满，游戏失败
+      if (!hasEmptySlot) {
+        GAME_STATE.isGameOver = true;
+
+        // 停止计时
+        stopGameTimer();
+
+        // 显示游戏结束遮罩
+        DOM_ELEMENTS.gameOver.classList.remove('hidden');
+        DOM_ELEMENTS.gameOverMessage.textContent = `游戏结束！卡槽已满，你通过了${Math.max(0, GAME_STATE.level - 1)}关，得分：${GAME_STATE.score}，用时：${formatTime(GAME_STATE.gameTime)}`;
+
+        // 保存排行榜数据
+        saveLeaderboardData();
+      }
+    }
+
+    // 使用移除道具
+    function useRemoveProp() {
+      // 检查是否可以使用道具
+      if (GAME_STATE.usedProps.remove >= GAME_CONFIG.PROP_COUNT) {
+        showToast('道具已用完');
+        return;
+      }
+
+      // 检查是否有足够的卡牌可以移除
+      const filledSlots = GAME_STATE.cardSlots.filter(slot => slot !== null);
+      if (filledSlots.length < 3) {
+        showToast('至少需要3张卡牌才能使用此道具');
+        return;
+      }
+
+      // 保存历史记录
+      saveHistory();
+
+      // 使用道具
+      GAME_STATE.usedProps.remove++;
+
+      // 移除前三张卡牌
+      const cardsToRemove = filledSlots.slice(0, 3);
+      removeCards(cardsToRemove);
+
+      // 从卡槽中移除
+      let removed = 0;
+      for (let i = 0; i < GAME_STATE.cardSlots.length && removed < 3; i++) {
+        if (GAME_STATE.cardSlots[i] !== null) {
+          GAME_STATE.cardSlots[i] = null;
+          removed++;
+        }
+      }
+
+      // 更新UI
+      updateUI();
+
+      // 检查关卡是否完成
+      setTimeout(() => {
+        checkGameStatus();
+      }, 600);
+    }
+
+    // 使用撤销道具
+    function useUndoProp() {
+      // 检查是否可以使用道具
+      if (GAME_STATE.usedProps.undo >= GAME_CONFIG.PROP_COUNT) {
+        showToast('道具已用完');
+        return;
+      }
+
+      // 检查是否有移动历史
+      if (GAME_STATE.moveHistory.length === 0) {
+        showToast('没有可撤销的操作');
+        return;
+      }
+
+      // 使用道具
+      GAME_STATE.usedProps.undo++;
+
+      // 获取最后一次移动
+      const lastState = GAME_STATE.moveHistory.pop();
+
+      // 恢复状态
+      GAME_STATE.cardStack = lastState.blocks;
+      GAME_STATE.cardSlots = lastState.cardSlots;
+      GAME_STATE.remainingCards = lastState.remainingCards;
+      GAME_STATE.score = lastState.score;
+
+      // 更新UI
+      updateUI();
+    }
+
+    // 使用洗牌道具
+    function useShuffleProp() {
+      // 检查是否可以使用道具
+      if (GAME_STATE.usedProps.shuffle >= GAME_CONFIG.PROP_COUNT) {
+        showToast('道具已用完');
+        return;
+      }
+
+      // 保存历史记录
+      saveHistory();
+
+      // 使用道具
+      GAME_STATE.usedProps.shuffle++;
+
+      // 收集所有未消除块的类型
+      const types = GAME_STATE.cardStack
+        .filter(b => b.status === 0 && !b.isRemoved)
+        .map(b => b.type);
+
+      // 洗牌
+      shuffleArray(types);
+
+      // 重新分配类型
+      let index = 0;
+      GAME_STATE.cardStack.forEach(block => {
+        if (block.status === 0 && !block.isRemoved) {
+          block.type = types[index++];
+        }
+      });
+
+      // 更新UI
+      updateUI();
+    }
+
+    // 开始游戏计时器
+    function startGameTimer() {
+      GAME_STATE.gameStartTime = new Date();
+
+      // 清除之前的计时器
+      if (GAME_STATE.timerInterval) {
+        clearInterval(GAME_STATE.timerInterval);
+      }
+
+      // 设置新的计时器
+      GAME_STATE.timerInterval = setInterval(() => {
+        const currentTime = new Date();
+        GAME_STATE.gameTime = Math.floor((currentTime - GAME_STATE.gameStartTime) / 1000);
+      }, 1000);
+    }
+
+    // 停止游戏计时器
+    function stopGameTimer() {
+      if (GAME_STATE.timerInterval) {
+        clearInterval(GAME_STATE.timerInterval);
+        GAME_STATE.timerInterval = null;
+      }
+    }
+
+    // 格式化时间
+    function formatTime(seconds) {
+      const minutes = Math.floor(seconds / 60);
+      const remainingSeconds = seconds % 60;
+      return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+    }
+
+    // 保存排行榜数据
+    function saveLeaderboardData() {
+      // 获取当前玩家数据
+      const playerData = {
+        name: `玩家${Math.floor(Math.random() * 1000)}`,
+        level: GAME_STATE.level,
+        score: GAME_STATE.score,
+        time: GAME_STATE.gameTime,
+        date: new Date().toISOString()
+      };
+
+      // 获取本地存储的排行榜数据
+      let leaderboardData = JSON.parse(localStorage.getItem('sheepGameLeaderboard')) || [];
+
+      // 添加新数据
+      leaderboardData.push(playerData);
+
+      // 按分数排序
+      leaderboardData.sort((a, b) => b.score - a.score);
+
+      // 只保留前10条数据
+      leaderboardData = leaderboardData.slice(0, 10);
+
+      // 保存到本地存储
+      localStorage.setItem('sheepGameLeaderboard', JSON.stringify(leaderboardData));
+
+      // 更新排行榜
+      updateLeaderboard();
+    }
+
+    // 更新排行榜
+    function updateLeaderboard() {
+      // 获取本地存储的排行榜数据
+      const leaderboardData = JSON.parse(localStorage.getItem('sheepGameLeaderboard')) || [];
+
+      // 清空排行榜
+      DOM_ELEMENTS.leaderboardBody.innerHTML = '';
+
+      // 添加排行榜数据
+      leaderboardData.forEach((data, index) => {
+        const row = document.createElement('tr');
+        row.className = index % 2 === 0 ? 'bg-white' : 'bg-green-50';
+
+        row.innerHTML = `
+          <td class="py-2 px-4">${index + 1}</td>
+          <td class="py-2 px-4">${data.name}</td>
+          <td class="py-2 px-4">${data.level}</td>
+          <td class="py-2 px-4">${data.score}</td>
+          <td class="py-2 px-4">${formatTime(data.time)}</td>
+        `;
+
+        DOM_ELEMENTS.leaderboardBody.appendChild(row);
+      });
+
+      // 如果没有数据，显示提示
+      if (leaderboardData.length === 0) {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td colspan="5" class="py-4 px-4 text-center text-gray-500">暂无排行榜数据</td>
+        `;
+        DOM_ELEMENTS.leaderboardBody.appendChild(row);
+      }
+    }
+
+    // 分享分数
+    function shareScore() {
+      const shareText = `我在羊了个羊 Emoji 版中通过了${GAME_STATE.level}关，得分：${GAME_STATE.score}，用时：${formatTime(GAME_STATE.gameTime)}，快来挑战我吧！`;
+
+      // 检查是否支持分享API
+      if (navigator.share) {
+        navigator.share({
+          title: '羊了个羊 Emoji 版',
+          text: shareText,
+          url: window.location.href
+        }).catch(err => {
+          console.error('分享失败:', err);
+          copyToClipboard(shareText);
+        });
+      } else {
+        copyToClipboard(shareText);
+      }
+    }
+
+    // 复制文本到剪贴板
+    function copyToClipboard(text) {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+
+      showToast('分享文本已复制到剪贴板');
+    }
+
+    // 显示提示
+    function showToast(message) {
+      // 检查是否已有提示
+      const existingToast = document.querySelector('.toast-message');
+      if (existingToast) {
+        existingToast.remove();
+      }
+
+      // 创建提示元素
+      const toast = document.createElement('div');
+      toast.className = 'toast-message fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-dark text-white px-4 py-2 rounded-lg shadow-lg z-50';
+      toast.textContent = message;
+
+      // 添加到页面
+      document.body.appendChild(toast);
+
+      // 2秒后移除
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'transition-opacity', 'duration-300');
+        setTimeout(() => {
+          if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+          }
+        }, 300);
+      }, 2000);
+    }
+
+    // 更新UI
+    function updateUI() {
+      // 更新关卡
+      DOM_ELEMENTS.level.textContent = GAME_STATE.level;
+
+      // 更新分数
+      DOM_ELEMENTS.score.textContent = GAME_STATE.score;
+
+      // 更新剩余卡牌数量
+      GAME_STATE.remainingCards = GAME_STATE.cardStack.filter(c => c.status === 0).length;
+      DOM_ELEMENTS.remainingCards.textContent = GAME_STATE.remainingCards;
+
+      // 更新卡槽
+      updateSlots();
+
+      // 更新卡牌
+      renderCards();
+
+      // 更新道具按钮状态
+      updatePropButtons();
+    }
+
+    // 更新卡槽
+    function updateSlots() {
+      const slots = DOM_ELEMENTS.slotArea.querySelectorAll('.slot');
+
+      slots.forEach((slot, index) => {
+        const card = GAME_STATE.cardSlots[index];
+
+        if (card) {
+          // 卡槽有卡牌
+          slot.className = 'slot slot-filled text-2xl font-bold';
+          slot.innerHTML = card.type;
+          const colorIndex = card.typeIndex % CARD_COLORS.length;
+          slot.style.backgroundColor = CARD_COLORS[colorIndex];
+        } else {
+          // 卡槽为空
+          slot.className = 'slot';
+          slot.innerHTML = '';
+          slot.style.backgroundColor = '';
+        }
+      });
+    }
+
+    // 更新道具按钮状态
+    function updatePropButtons() {
+      // 更新移除按钮
+      DOM_ELEMENTS.removeBtn.disabled = GAME_STATE.usedProps.remove >= GAME_CONFIG.PROP_COUNT;
+      DOM_ELEMENTS.removeBtn.querySelector('span').textContent = GAME_CONFIG.PROP_COUNT - GAME_STATE.usedProps.remove;
+
+      // 更新撤销按钮
+      DOM_ELEMENTS.undoBtn.disabled = GAME_STATE.usedProps.undo >= GAME_CONFIG.PROP_COUNT;
+      DOM_ELEMENTS.undoBtn.querySelector('span').textContent = GAME_CONFIG.PROP_COUNT - GAME_STATE.usedProps.undo;
+
+      // 更新洗牌按钮
+      DOM_ELEMENTS.shuffleBtn.disabled = GAME_STATE.usedProps.shuffle >= GAME_CONFIG.PROP_COUNT;
+      DOM_ELEMENTS.shuffleBtn.querySelector('span').textContent = GAME_CONFIG.PROP_COUNT - GAME_STATE.usedProps.shuffle;
+    }
+
+    // 辅助函数：随机打乱数组
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    // 页面加载完成后初始化游戏
+    window.addEventListener('load', initGame);
+
+    // 窗口大小改变时重新计算卡牌位置
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+      if (GAME_STATE.isGameStarted && !GAME_STATE.isGameOver && !GAME_STATE.isLevelCleared) {
+        // 防抖：避免频繁触发
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+          renderCards();
+        }, 200);
+      }
+    });
+  </script>
+</body>
+</html>
