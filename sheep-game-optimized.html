@@ -47,7 +47,8 @@
       border-color: #d1d5db;
     }
 
-    .card-blocked::after {
+    /* 只有被压住的卡牌显示锁图标，已点击的卡牌不显示 */
+    .card-blocked:not(.card-clicked)::after {
       content: '🔒';
       position: absolute;
       top: 2px;
@@ -59,6 +60,7 @@
     .card-clicked {
       border-color: #facc15;
       border-width: 3px;
+      cursor: not-allowed;
     }
 
     .card-removed {
@@ -680,10 +682,13 @@
           const cardElement = document.createElement('div');
           cardElement.className = 'card';
 
+          // 已点击的卡牌：添加样式并锁定
           if (card.status === 1) {
             cardElement.classList.add('card-clicked');
+            cardElement.classList.add('card-blocked'); // 锁定，不能再次点击
           }
 
+          // 被压住的卡牌：锁定
           const isBlocked = isCardBlocked(card);
           if (isBlocked) {
             cardElement.classList.add('card-blocked');
@@ -720,6 +725,14 @@
     // 选择卡牌
     function selectCard(card) {
       if (GAME_STATE.isGameOver || GAME_STATE.isLevelCleared) return;
+
+      // 检查卡牌是否已经被点击或消除
+      if (card.status !== 0) {
+        if (card.status === 1) {
+          showToast('该卡牌已被选中，不能重复点击');
+        }
+        return;
+      }
 
       if (isCardBlocked(card)) {
         showToast('该卡牌被压住，无法点击');
